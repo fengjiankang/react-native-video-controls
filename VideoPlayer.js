@@ -82,7 +82,11 @@ export default class VideoPlayer extends Component {
         this.events = {
             onError: this.props.onError || this._onError.bind( this ),
             onBack: this.props.onBack || this._onBack.bind( this ),
-            onEnd: this.props.onEnd || this._onEnd.bind( this ),
+            // onEnd: this.props.onEnd ||  this._onEnd.bind( this ),
+            onEnd: this.props.onEnd ? (data) => {
+              this._onEnd(data)
+              this.props.onEnd(data)
+            } : this._onEnd.bind( this ),
             onScreenTouch: this._onScreenTouch.bind( this ),
             onEnterFullscreen: this.props.onEnterFullscreen,
             onExitFullscreen: this.props.onExitFullscreen,
@@ -91,6 +95,7 @@ export default class VideoPlayer extends Component {
             onLoad: this._onLoad.bind( this ),
             onPause: this.props.onPause,
             onPlay: this.props.onPlay,
+            onMore: this.props.onMore || this._onMore.bind(this),
         };
 
         /**
@@ -112,7 +117,7 @@ export default class VideoPlayer extends Component {
             seekPanResponder: PanResponder,
             controlTimeout: null,
             volumeWidth: 150,
-            iconOffset: 0,
+            iconOffset: 7,
             seekWidth: 0,
             ref: Video,
         };
@@ -161,6 +166,10 @@ export default class VideoPlayer extends Component {
     | It is suggested that you override onEnd.
     |
     */
+
+    _onMore = () => {
+
+    }
 
     /**
      * When load starts we display a loading icon
@@ -228,7 +237,13 @@ export default class VideoPlayer extends Component {
      * Either close the video or go to a
      * new page.
      */
-    _onEnd() {}
+    _onEnd(data = {}) {
+      this.setSeekerPosition(this.player.seekerWidth)
+      // this.setState({
+      //   seekerPosition: this.player.seekerWidth - 12,
+      //   currentTime: this.state.duration
+      // })
+    }
 
     /**
      * Set the error state to true which then
@@ -646,7 +661,7 @@ export default class VideoPlayer extends Component {
      * @return {float} volume handle position in px based on volume
      */
     calculateVolumePositionFromVolume() {
-        return this.player.volumeWidth * this.state.volume;
+        return this.player.volumeWidth / this.state.volume;
     }
 
 
@@ -858,7 +873,7 @@ export default class VideoPlayer extends Component {
         const backControl = this.props.disableBack ? this.renderNullControl() : this.renderBack();
         const volumeControl = this.props.disableVolume ? this.renderNullControl() : this.renderVolume();
         const fullscreenControl = this.props.disableFullscreen ? this.renderNullControl() : this.renderFullscreen();
-
+        const moreControl = this.props.disableMore ? this.renderNullControl() : this.renderMore();
         return(
             <Animated.View style={[
                 styles.controls.top,
@@ -875,7 +890,8 @@ export default class VideoPlayer extends Component {
                         { backControl }
                         <View style={ styles.controls.pullRight }>
                             { volumeControl }
-                            { fullscreenControl }
+                            {/* { fullscreenControl } */}
+                            { moreControl }
                         </View>
                     </View>
                 </ImageBackground>
@@ -939,6 +955,14 @@ export default class VideoPlayer extends Component {
         );
     }
 
+    renderMore = () => {
+      return this.renderControl(
+        <Image source={ require('./assets/img/more_white.png') } />,
+        this.events.onMore,
+        styles.controls.fullscreen
+    );
+    }
+
     /**
      * Render bottom control group and wrap it in a holder
      */
@@ -947,6 +971,7 @@ export default class VideoPlayer extends Component {
         const timerControl = this.props.disableTimer ? this.renderNullControl() : this.renderTimer();
         const seekbarControl = this.props.disableSeekbar ? this.renderNullControl() : this.renderSeekbar();
         const playPauseControl = this.props.disablePlayPause ? this.renderNullControl() : this.renderPlayPause();
+        const fullscreenControl = this.props.disableFullscreen ? this.renderNullControl() : this.renderFullscreen();
 
         return(
             <Animated.View style={[
@@ -960,15 +985,18 @@ export default class VideoPlayer extends Component {
                     source={ require( './assets/img/bottom-vignette.png' ) }
                     style={[ styles.controls.column ]}
                     imageStyle={[ styles.controls.vignette ]}>
-                    { seekbarControl }
+                    {/* { seekbarControl } */}
                     <View style={[
                         styles.controls.row,
                         styles.controls.bottomControlGroup
                     ]}>
                         { playPauseControl }
-                        { this.renderTitle() }
+                        {/* { this.renderTitle() } */}
+                        <View style={{flex: 1}}>
+                          { seekbarControl }
+                        </View>
                         { timerControl }
-
+                        { fullscreenControl }
                     </View>
                 </ImageBackground>
             </Animated.View>
@@ -979,7 +1007,6 @@ export default class VideoPlayer extends Component {
      * Render the seekbar and attach its handlers
      */
     renderSeekbar() {
-
         return (
             <View style={ styles.seekbar.container }>
                 <View
@@ -997,7 +1024,7 @@ export default class VideoPlayer extends Component {
                 <View
                     style={[
                         styles.seekbar.handle,
-                        { left: this.state.seekerPosition }
+                        { left: this.state.seekerPosition,}
                     ]}
                     { ...this.player.seekPanResponder.panHandlers }
                 >
@@ -1089,7 +1116,7 @@ export default class VideoPlayer extends Component {
                 <View style={ styles.error.container }>
                     <Image source={ require( './assets/img/error-icon.png' ) } style={ styles.error.icon } />
                     <Text style={ styles.error.text }>
-                        Video unavailable
+                        视频播放失败
                     </Text>
                 </View>
             );
@@ -1208,7 +1235,8 @@ const styles = {
             resizeMode: 'stretch'
         },
         control: {
-            padding: 16,
+            // padding: 16,
+            padding: 8,
         },
         text: {
             backgroundColor: 'transparent',
@@ -1256,7 +1284,7 @@ const styles = {
         },
         playPause: {
             position: 'relative',
-            width: 80,
+            width: 30,
             zIndex: 0
         },
         title: {
@@ -1269,7 +1297,8 @@ const styles = {
             textAlign: 'center',
         },
         timer: {
-            width: 80,
+          // backgroundColor: `red`,
+            width: 60,
         },
         timerText: {
             backgroundColor: 'transparent',
@@ -1302,17 +1331,16 @@ const styles = {
             marginTop: -24,
             marginLeft: -24,
             padding: 16,
-        },
-        icon: {
-            marginLeft:7
         }
     }),
     seekbar: StyleSheet.create({
         container: {
             alignSelf: 'stretch',
             height: 28,
-            marginLeft: 20,
-            marginRight: 20
+            // marginLeft: 20,
+            // marginRight: 20
+            marginLeft: 10,
+            marginRight: 10
         },
         track: {
             backgroundColor: '#333',
@@ -1328,14 +1356,15 @@ const styles = {
         },
         handle: {
             position: 'absolute',
-            marginLeft: -7,
-            height: 28,
-            width: 28,
+            // marginLeft: -7,
+            // height: 28,
+            // width: 28,
         },
         circle: {
             borderRadius: 12,
             position: 'relative',
-            top: 8, left: 8,
+            top: 8,
+            // left: 8,
             height: 12,
             width: 12,
         },
