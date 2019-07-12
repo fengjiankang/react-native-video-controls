@@ -238,6 +238,7 @@ export default class VideoPlayer extends Component {
      * new page.
      */
     _onEnd(data = {}) {
+
       this.setSeekerPosition(this.player.seekerWidth)
       // this.setState({
       //   seekerPosition: this.player.seekerWidth - 12,
@@ -453,6 +454,7 @@ export default class VideoPlayer extends Component {
             typeof this.events.onExitFullscreen === 'function' && this.events.onExitFullscreen();
         }
 
+        this.fullscreenToggled = true
         this.setState( state );
     }
 
@@ -1003,6 +1005,20 @@ export default class VideoPlayer extends Component {
         );
     }
 
+    onSeekBarOnLayout = event => {
+      this.player.seekerWidth = event.nativeEvent.layout.width
+
+      if ( this.fullscreenToggled ) {
+        this.fullscreenToggled = false
+        this.changeSeekLayout()
+      }
+    }
+
+    changeSeekLayout = () => {
+      const position = this.calculateSeekerPosition();
+      this.setSeekerPosition( position );
+    }
+
     /**
      * Render the seekbar and attach its handlers
      */
@@ -1011,7 +1027,7 @@ export default class VideoPlayer extends Component {
             <View style={ styles.seekbar.container }>
                 <View
                     style={ styles.seekbar.track }
-                    onLayout={ event => this.player.seekerWidth = event.nativeEvent.layout.width }
+                    onLayout={this.onSeekBarOnLayout}
                 >
                     <View style={[
                         styles.seekbar.fill,
@@ -1141,6 +1157,7 @@ export default class VideoPlayer extends Component {
                         resizeMode={ this.state.resizeMode }
                         volume={ this.state.volume }
                         paused={ this.state.paused }
+                        // paused={ false }
                         muted={ this.state.muted }
                         rate={ this.state.rate }
 
